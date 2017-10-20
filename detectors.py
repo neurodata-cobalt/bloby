@@ -44,6 +44,8 @@ def DoG(img, gamma = 2, dark = 1, sigma = 2, print_level = 0):
     return DoG_stack
 
 def blob_descriptors(DoG_img, intensity_img, sigma, U):
+    # TODO: Add functionality to do a truncated blob-descriptor.
+    #       iterations are taking too long.
     blob_candidates_T = []
     H = img_hessian_3d(DoG_img)
     H_filter = np.zeros(DoG_img.shape)

@@ -50,6 +50,7 @@ class BlobDetector():
                 print("{} concave points found".format(len(U)))
 
             # Compute blob descriptors
+            # TODO: calculating the blob descriptors is taking way to long. We need to trunate U
             stack_iter = zip(DoG_stack, img_stack.images)
             if print_level:
                 bar = progressbar.ProgressBar()
