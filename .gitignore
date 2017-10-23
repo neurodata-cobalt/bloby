@@ -103,5 +103,9 @@ ENV/
 # imgs
 /img
 
+# output CSVs
+/output
+
 # tif files
 *.tif
+.DS_Store
