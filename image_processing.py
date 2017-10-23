@@ -118,9 +118,9 @@ def raster_3d_generator(img_shape):
                 yield (i, j, k)
 
 def voxel_region_iter(z, y, x):
-    for i in range(-1,2,2):
-        for j in range(-1,2,2):
-            for k in range(-1,2,2):
+    for i in range(-1,2):
+        for j in range(-1,2):
+            for k in range(-1,2):
                 yield (i+z,j+y,k+x)
 
 

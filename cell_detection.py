@@ -10,15 +10,22 @@ from image_processing import (
 from detectors import (
     DoG,
     find_negative_curvative_points,
-    blob_descriptors
+    blob_descriptors,
+    post_prune,
+    is_well_connected
 )
 
+#REMOVE THIS CODE LATER
+import sys
+sys.path.append('../clarity-f17s18/src/util/')
+from ImageDrawer import ImageDrawer
+import tifffile as tiff
 
 class BlobDetector():
     print_level = 1
 
     @classmethod
-    def detect_3d_blobs(cls, fname, batch_process=False, inverted=0):
+    def detect_3d_blobs(cls, fname, batch_process=False, inverted=0, output_dir='./output/'):
         # Read in images.
         # If batch is true then image is broken up for faster processing
         print_level = cls.print_level
@@ -26,6 +33,8 @@ class BlobDetector():
 
         # Compute SIFT features
         DoG_stack = []
+        detected_blobs = []
+
         for i in range(img_stack.stack_size):
             if print_level:
                 if img_stack.stack_size == 1:
@@ -44,13 +53,14 @@ class BlobDetector():
                 print("Computing concave points")
             for sigma, DoG_img in concave_point_bar:
                 indices = find_negative_curvative_points(DoG_img)
-                for i in range(indices.shape[0]):
-                     U.add(tuple(indices[i,:].astype(int)))
+                for idx in range(indices.shape[0]):
+                     U.add(tuple(indices[idx,:].astype(int)))
             if print_level:
                 print("{} concave points found".format(len(U)))
 
             # Compute blob descriptors
             # TODO: calculating the blob descriptors is taking way to long. We need to trunate U
+
             stack_iter = zip(DoG_stack, img_stack.images)
             if print_level:
                 bar = progressbar.ProgressBar()
@@ -60,7 +70,16 @@ class BlobDetector():
             for (sigma, DoG_img), intensity_img in stack_iter:
                 blob_candidates_T[sigma] = blob_descriptors(DoG_img, intensity_img, sigma, U)
 
-            # TODO: Auto post-pruning
+            # Auto post-pruning using GMM
+            detected_blobs = post_prune(blob_candidates_T)
+            outfile_path = output_dir + 'detected_blob_centers_stack_{}.csv'.format(i+1)
+            print("Writing detected blobs to {} ...".format(outfile_path))
+
+            outfile = open(outfile_path, 'w')
+            for blob in detected_blobs:
+              outfile.write(','.join(str(x) for x in blob) + '\n')
+
+            outfile.close()
 
         print("Done")
 
