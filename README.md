@@ -22,3 +22,5 @@ Backlog of Dev tasks:
 4. Add more logging and informative outputs
 5. Add support for configuration files
  * Like how Microsoft's CNTK has configuration files that hold all the parameters for the models, we should have a configuration file option for users to specify all the parameters they want to use.
+6. Configure Travis CI Pipeline
+7. Push the centroids marked data as an annotated channel to boss
