@@ -105,7 +105,9 @@ ENV/
 
 # output CSVs
 /output
+/centers
 
 # tif files
 *.tif
 .DS_Store
+*.csv
