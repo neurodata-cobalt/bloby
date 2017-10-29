@@ -89,7 +89,7 @@ def find_connected_component(center, U, img):
     neighbor_iter = neighboring_pixels(cz, cy, cx)
     connected_component = []
     for i,j,k in neighbor_iter:
-        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] < 0:
+        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] > 0:
             if (i,j,k) in U:
                 connected_component.append((i,j,k))
     return connected_component
@@ -172,7 +172,7 @@ def post_prune(blob_candidates):
     if len(candidates_features) <= 2:
         return candidate_coords
 
-    print('Running GMM on blob candidates')
+    #print('Running GMM on blob candidates')
 
     model = GaussianMixture(n_components=2, covariance_type='full')
 
@@ -205,16 +205,16 @@ def post_prune(blob_candidates):
 
     print('running KMeans from {} to {}'.format(min_k, max_k))
     for k in range(min_k, max_k):
-        print('K={}'.format(k))
+        #print('K={}'.format(k))
         try:
             kmeans = KMeans(n_clusters=k, init='k-means++')
             cluster_labels = kmeans.fit_predict(blobs)
             s_score = silhouette_score(blobs, cluster_labels)
         except ValueError:
-            print('K={} not possible'.format(k))
+            #print('K={} not possible'.format(k))
             continue
 
-        print('silhouette_score={}'.format(s_score))
+        #print('silhouette_score={}'.format(s_score))
 
         if s_score > max_score:
             max_score = s_score
