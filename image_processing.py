@@ -89,7 +89,7 @@ def find_connected_component(center, U, img):
     neighbor_iter = neighboring_pixels(cz, cy, cx)
     connected_component = []
     for i,j,k in neighbor_iter:
-        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] > 0:
+        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] < 0:
             if (i,j,k) in U:
                 connected_component.append((i,j,k))
     return connected_component
@@ -159,7 +159,6 @@ def normalize_image(img):
     img = np.divide(img, img_max - img_min)
     return img
 
-
 def post_prune(blob_candidates):
     candidates_features = []
     candidate_coords = []
@@ -170,14 +169,16 @@ def post_prune(blob_candidates):
         candidates_features.append(data_point)
         candidate_coords.append(list(c[0]))
 
-    if len(candidates_features) == 0:
-        return []
+    if len(candidates_features) <= 2:
+        return candidate_coords
+
+    print('Running GMM on blob candidates')
+
     model = GaussianMixture(n_components=2, covariance_type='full')
-    #model = DPGMM(n_components=2, alpha=100, n_iter=100, covariance_type='spherical')
+
     model.fit(candidates_features)
     class_labels = model.predict(candidates_features)
     scores = model.score_samples(np.array(candidates_features))
-    #scores = model.score(np.array(candidates_features))
 
     avg_scores = np.zeros(len(np.unique(class_labels)))
 
@@ -192,21 +193,36 @@ def post_prune(blob_candidates):
     blobs = [b for i,b in enumerate(candidate_coords) if class_labels[i] == blob_class_index]
 
     blobs = [(b[0], b[1], b[2]) for b in blobs]
+    #return blobs
 
     clusters = int(len(blobs)/PIXELS_PER_BLOB)
 
     max_score = 0
     max_kmeans = None
 
-    for k in range(max(2,clusters-10), clusters+10):
-      kmeans = KMeans(n_clusters=k, init='k-means++')
-      cluster_labels = kmeans.fit_predict(blobs)
-      s_score = silhouette_score(blobs, cluster_labels)
+    min_k = max(2, clusters-10)
+    max_k = clusters + 10
 
-      if s_score > max_score:
-        max_score = s_score
-        max_kmeans = kmeans
+    print('running KMeans from {} to {}'.format(min_k, max_k))
+    for k in range(min_k, max_k):
+        print('K={}'.format(k))
+        try:
+            kmeans = KMeans(n_clusters=k, init='k-means++')
+            cluster_labels = kmeans.fit_predict(blobs)
+            s_score = silhouette_score(blobs, cluster_labels)
+        except ValueError:
+            print('K={} not possible'.format(k))
+            continue
 
+        print('silhouette_score={}'.format(s_score))
+
+        if s_score > max_score:
+            max_score = s_score
+            max_kmeans = kmeans
+    if max_kmeans == None:
+        return blobs
+    # max_kmeans = KMeans(n_clusters=14, init='k-means++')
+    # cluster_labels = max_kmeans.fit_predict(blobs)
     return [[math.ceil(b[0]), math.ceil(b[1]), math.ceil(b[2])] for b in max_kmeans.cluster_centers_]
 
 def draw_centers(orig_img, points, copy=True):
@@ -225,7 +241,7 @@ def min_max(x, minimum, maximum):
 
 def set_rgb(img, x, y, z, r, g, b):
     img[z, y, x, 0] = r
-    img[z, y, y, 1] = g
+    img[z, y, x, 1] = g
     img[z, y, x, 2] = b
 
 def draw_square(img, x, y, z, radi, rgb, copy=True, overwrite=True):
