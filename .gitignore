@@ -110,4 +110,4 @@ ENV/
 # tif files
 *.tif
 .DS_Store
-
+*.csv
