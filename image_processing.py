@@ -8,8 +8,9 @@ from sklearn.mixture import (
     GaussianMixture
 )
 from collections import namedtuple
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.metrics import silhouette_score
+from sklearn.metrics.pairwise import cosine_similarity
 from tifffile import imsave
 import csv
 
@@ -81,7 +82,6 @@ def get_neighbours(point):
     neighbor_iter = neighboring_pixels(cz, cy, cx)
     return [(i, j, k) for i,j,k in neighbor_iter]
 
-
 def find_connected_component(center, U, img):
     cz, cy, cx = center[0], center[1], center[2]
     shape_z, shape_y, shape_x = img.shape
@@ -89,7 +89,7 @@ def find_connected_component(center, U, img):
     neighbor_iter = neighboring_pixels(cz, cy, cx)
     connected_component = []
     for i,j,k in neighbor_iter:
-        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] > 0:
+        if i >= 0 and j >= 0 and k >= 0 and i < shape_z and j < shape_y and k < shape_x and img[i,j,k] < 0:
             if (i,j,k) in U:
                 connected_component.append((i,j,k))
     return connected_component
@@ -101,7 +101,6 @@ def draw_connected_components(img, connected_components, fname):
         for c in cc:
             draw_points.append(c)
     ImageDrawer.draw_centers(original_image, draw_points, (255, 0, 0), fname=fname)
-
 
 def format_H(H):
     # If H was computed from a Z,Y,X image then the derivatives are inverted so
@@ -159,10 +158,38 @@ def normalize_image(img):
     img = np.divide(img, img_max - img_min)
     return img
 
+def distance(p1, p2):
+    z1, y1, x1 = p1
+    z2, y2, x2 = p2
+
+    #edist = math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+    edist = abs(np.linalg.norm(np.array(p1) - np.array(p2)))
+
+    exp = np.exp( - 0.0075 * (edist ** 2))
+    return (exp/edist) if edist != 0 else exp
+
+def get_cluster_centers(data, labels):
+    k = len(np.unique(labels))
+    centers = []
+    for i in range(0, k):
+        points = [data[j] for j,l in enumerate(labels) if l == i]
+        if len(points) == 0:
+            continue
+        sum_z = sum([p[0] for p in points])
+        sum_y = sum([p[1] for p in points])
+        sum_x = sum([p[2] for p in points])
+        c_z = int(sum_z/len(points))
+        c_y = int(sum_y/len(points))
+        c_x = int(sum_x/len(points))
+        centers.append((c_z, c_y, c_x))
+    return centers
+
+
 def post_prune(blob_candidates):
     candidates_features = []
     candidate_coords = []
-    PIXELS_PER_BLOB = 35
+    PIXELS_PER_BLOB = 30
+
     for c in blob_candidates:
         data_point = []
         data_point.extend([c[1], c[2], c[3]])
@@ -174,55 +201,63 @@ def post_prune(blob_candidates):
 
     #print('Running GMM on blob candidates')
 
-    model = GaussianMixture(n_components=2, covariance_type='full')
+    # model = GaussianMixture(n_components=2, covariance_type='full')
+    #
+    # model.fit(candidates_features)
+    # class_labels = model.predict(candidates_features)
+    # scores = model.score_samples(np.array(candidates_features))
+    #
+    # avg_scores = np.zeros(len(np.unique(class_labels)))
+    #
+    # for i, x in enumerate(candidates_features):
+    #     avg_scores[class_labels[i]] += scores[i]
+    #
+    # for i,avg_score in enumerate(avg_scores):
+    #     n = len([x for x in class_labels if x == i])
+    #     avg_scores[i] = avg_score/float(n)
+    #
+    # blob_class_index = list(avg_scores).index(max(avg_scores))
 
-    model.fit(candidates_features)
-    class_labels = model.predict(candidates_features)
-    scores = model.score_samples(np.array(candidates_features))
-
-    avg_scores = np.zeros(len(np.unique(class_labels)))
-
-    for i, x in enumerate(candidates_features):
-        avg_scores[class_labels[i]] += scores[i]
-
-    for i,avg_score in enumerate(avg_scores):
-        n = len([x for x in class_labels if x == i])
-        avg_scores[i] = avg_score/float(n)
-
-    blob_class_index = list(avg_scores).index(max(avg_scores))
-    blobs = [b for i,b in enumerate(candidate_coords) if class_labels[i] == blob_class_index]
+    #blobs = [b for i,b in enumerate(candidate_coords) if class_labels[i] == blob_class_index]
+    blobs = [b for i,b in enumerate(candidate_coords)]
 
     blobs = [(b[0], b[1], b[2]) for b in blobs]
     #return blobs
 
-    clusters = int(len(blobs)/PIXELS_PER_BLOB)
+    print("blob length", len(blobs))
+    clusters = math.ceil(len(blobs)/PIXELS_PER_BLOB)
 
-    max_score = 0
-    max_kmeans = None
+    if clusters < 2:
+        return get_cluster_centers(blobs, [0] * len(blobs))
 
-    min_k = max(2, clusters-10)
-    max_k = clusters + 10
+    max_kmeans = KMeans(n_clusters=clusters, init='k-means++', random_state=0)
+    cluster_labels = max_kmeans.fit_predict(blobs)
 
-    print('running KMeans from {} to {}'.format(min_k, max_k))
-    for k in range(min_k, max_k):
-        #print('K={}'.format(k))
-        try:
-            kmeans = KMeans(n_clusters=k, init='k-means++')
-            cluster_labels = kmeans.fit_predict(blobs)
-            s_score = silhouette_score(blobs, cluster_labels)
-        except ValueError:
-            #print('K={} not possible'.format(k))
-            continue
+    # max_score = 0
+    # max_kmeans = None
+    #
+    # min_k = max(2, clusters-10)
+    # max_k = clusters + 10
+    #
+    # print('running KMeans from {} to {}'.format(min_k, max_k))
+    # for k in range(min_k, max_k):
+    #     print('K={}'.format(k))
+    #     try:
+    #         kmeans = KMeans(n_clusters=24, init='k-means++', random_state=0)
+    #         cluster_labels = kmeans.fit_predict(blobs)
+    #         s_score = silhouette_score(blobs, cluster_labels)
+    #         print('silhouette_score={}'.format(s_score))
+    #
+    #         if s_score > max_score:
+    #             max_score = s_score
+    #             max_kmeans = kmeans
+    #     except:
+    #         print('K={} not possible'.format(k))
+    #         continue
+    #
+    # if max_kmeans == None:
+    #     return blobs
 
-        #print('silhouette_score={}'.format(s_score))
-
-        if s_score > max_score:
-            max_score = s_score
-            max_kmeans = kmeans
-    if max_kmeans == None:
-        return blobs
-    # max_kmeans = KMeans(n_clusters=14, init='k-means++')
-    # cluster_labels = max_kmeans.fit_predict(blobs)
     return [[math.ceil(b[0]), math.ceil(b[1]), math.ceil(b[2])] for b in max_kmeans.cluster_centers_]
 
 def draw_centers(orig_img, points, copy=True):
