@@ -5,7 +5,7 @@ import os
 import math
 import csv
 import progressbar
-from tifffile import imread
+from tifffile import imread, imsave
 
 ### TODO: SOO WEIRD THIS NEEDS TO BE IMPORTED TO AVOID NaN
 from Grapher import Grapher
@@ -62,6 +62,7 @@ class BlobDetector():
 
             bar = (progressbar.ProgressBar())(iter(concave_points))
             print("Finding connected components")
+
             for c in bar:
                 cc = find_connected_component(c, concave_points_cpy, img_dog)
                 if len(cc) >= 6:
@@ -115,49 +116,65 @@ class BlobDetector():
         write_csv(centers, output_path)
 
 if __name__ == "__main__":
-    IMG_DIR = './img/'
     CENTERS_DIR = './centers/'
-    orig_img = imread(IMG_DIR + 's3617_cutout_normalized.tif')
-    overlay_img = imread(IMG_DIR + 's3617_cutout.tif')
+
+    orig_img = imread('./img/subvolumes-normalized/cell_detection_9.tiff')
+    #orig_img = imread('./img/s3617_cutout_normalized.tif')
+    shape_z, shape_y, shape_x, _ = orig_img.shape
+
+    overlay_img = imread('./img/subvolumes/cell_detection_9.tiff')
+    #overlay_img = imread('./img/s3617_cutout.tif')
 
     detected_blobs = []
     image_slices = []
 
-    # index = 0
-    # for i in range(0,10):
-    #     cutout_start_x = (i*100)
-    #     cutout_end_x = cutout_start_x + 100
-    #     for j in range(0,10):
-    #         print("Processing slice {}".format(index))
-    #         cutout_start_y = (j*100)
-    #         cutout_end_y = cutout_start_y + 100
-    #         grey_img = orig_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x, 0]
-    #         blobs = BlobDetector.detect_3d_blobs(grey_img, 0.5, dark_blobs=1)
-    #         blobs = [[b[0], b[1] + cutout_start_y, b[2] + cutout_start_x] for b in blobs]
-    #         detected_blobs.extend(blobs)
-    #         print('{} blobs detected so far'.format(len(detected_blobs)))
-    #         print("======================================")
-    #         index += 1
+    index = 0
+    batch_length_y = int(shape_y/100)
+    batch_length_x = int(shape_x/100)
+
+    for i in range(0, batch_length_x):
+        cutout_start_x = (i*100)
+        cutout_end_x = cutout_start_x + 100
+        for j in range(0,batch_length_y):
+            print("Processing slice {}".format(index))
+            cutout_start_y = (j*100)
+            cutout_end_y = cutout_start_y + 100
+
+            print('X={}-{} and Y={}-{}'.format(cutout_start_x, cutout_end_x, cutout_start_y, cutout_end_y))
+            grey_img = orig_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x, 0]
+            blobs = BlobDetector.detect_3d_blobs(grey_img, 0.5, dark_blobs=1)
+            blobs = [[b[0], b[1] + cutout_start_y, b[2] + cutout_start_x] for b in blobs]
+            detected_blobs.extend(blobs)
+            print('{} blobs detected so far'.format(len(detected_blobs)))
+            print("======================================")
+            index += 1
+
+            if (index + 1) % 10 == 0:
+                BlobDetector.save_centers(detected_blobs, "./img/subvolumes-predicted/cell_detection_9")
+                BlobDetector.draw_blobs(overlay_img, detected_blobs, "subvolumes-predicted/cell_detection_9.tiff")
+                print("NOTE: Centers are written in (z,y,x)")
+
+    # cutout_start_x = 0
+    # cutout_end_x = 100
+    # cutout_start_y = 400
+    # cutout_end_y = 500
+
+    # cutout_start_x = 650
+    # cutout_end_x = 800
+    # cutout_start_y = 350
+    # cutout_end_y = 500
     #
-    #         if (index + 1) % 10 == 0:
-    #             BlobDetector.save_centers(detected_blobs, "output_centers")
-    #             BlobDetector.draw_blobs(overlay_img, detected_blobs, "drawn_output.tif")
-    #             print("NOTE: Centers are written in (z,y,x)")
-
-    cutout_start_x = 650
-    cutout_end_x = 800
-    cutout_start_y = 350
-    cutout_end_y = 500
-
-    grey_img = orig_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x, 0]
-    detected_blobs = BlobDetector.detect_3d_blobs(grey_img, 0.5, dark_blobs=1)
+    # grey_img = orig_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x, 0]
+    # detected_blobs = BlobDetector.detect_3d_blobs(grey_img, 0.5, dark_blobs=1)
 
     # with open('output_centers.csv') as csv_file:
     #     reader = csv.reader(csv_file)
     #     centroids = list(reader)
     #     detected_blobs = [[int(c[0]), int(c[1]), int(c[2])] for c in centroids]
 
-    #BlobDetector.draw_blobs(overlay_img, detected_blobs, "drawn_output.tif")
-    BlobDetector.draw_blobs(overlay_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x], detected_blobs, "drawn_output.tif")
-    BlobDetector.save_centers(detected_blobs, "output_centers")
+    # BlobDetector.save_centers(detected_blobs, "output_centers")
+    # BlobDetector.draw_blobs(overlay_img[:, cutout_start_y:cutout_end_y, cutout_start_x:cutout_end_x], detected_blobs, "drawn_output.tif")
+
+    BlobDetector.save_centers(detected_blobs, "./img/subvolumes-predicted/cell_detection_9")
+    BlobDetector.draw_blobs(overlay_img, detected_blobs, "subvolumes-predicted/cell_detection_9.tiff")
     print("NOTE: Centers are written in (z,y,x)")
