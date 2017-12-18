@@ -296,24 +296,15 @@ class BlobMetrics(object):
             id2name = self._get_child_nodes_from_ontology(node['children'][i], id2name)
         return id2name
 
-    def _find_region_for_point(self, point, region2voxel):
-        for r in region2voxel.keys():
-            if point in region2voxel[r]:
-                return r
-        return -1
-
     def get_region_based_count(self, ontology_file, registered_brain_tif):
         ontology_json = json.load(open(ontology_file, 'r'))
         id2name = self._get_child_nodes_from_ontology(ontology_json, {})
+
         id2name[32767] = 'background'
 
-        #print(id2name)
         background_region_number = 0
-
         registered_brain = imread(registered_brain_tif).astype(np.uint64)
-
         region_numbers = list(np.unique(registered_brain, return_counts=True)[0])
-
         region2voxel = {}
 
         reg_pbar = tqdm(region_numbers)
@@ -324,16 +315,13 @@ class BlobMetrics(object):
             voxels = np.where(registered_brain == region)
             region2voxel[region] = map(list, zip(*voxels))
 
-        region_count = {}
-
         coord_pbar = tqdm(self.predicted_coords)
+        region_count = {}
 
         for p in coord_pbar:
             coord_pbar.set_description('Processing centroid {}'.format(p))
+            rp = registered_brain[int(p[0]), int(p[1]), int(p[2])]
 
-            rp = self._find_region_for_point(p, region2voxel)
-            if rp == -1:
-                continue
             if id2name[rp] in region_count:
                 region_count[id2name[rp]] += 1
             else:
@@ -341,10 +329,9 @@ class BlobMetrics(object):
 
         return region_count
 
-    def plot_region_based_count(self, count_statistics=None):
+    def plot_region_based_count(self, count_statistics=None, fig_path=None):
         count_statistics = sorted(count_statistics.items(), key=operator.itemgetter(1))
         count_statistics.reverse()
-        print(count_statistics)
 
         bar_x = np.arange(5)
         bar_y = [c[1] for c in count_statistics[:5]]
@@ -359,8 +346,12 @@ class BlobMetrics(object):
         ax.set_xlabel('Region', fontsize=12)
         ax.set_ylabel('Count', fontsize=12)
         #plt.xticks(list(counts.keys()), list(counts.keys()))
+        ax.get_xaxis().set_visible(False)
         ax.set_title('Region wise cell count',
                      fontsize=16)
         ax.legend()
 
-        plt.savefig('data/plots/reg.png')
+        if fig_path:
+            plt.savefig(fig_path)
+        else:
+            plt.show()
