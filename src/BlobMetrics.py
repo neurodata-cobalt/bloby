@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from tifffile import imread
 import json
 import operator
+from tqdm import tqdm
 
 class BlobMetrics(object):
 
@@ -302,7 +303,7 @@ class BlobMetrics(object):
         return -1
 
     def get_region_based_count(self, ontology_file, registered_brain_tif):
-        ontology_json = json.load(file(ontology_file))
+        ontology_json = json.load(open(ontology_file, 'r'))
         id2name = self._get_child_nodes_from_ontology(ontology_json, {})
         id2name[32767] = 'background'
 
@@ -315,16 +316,24 @@ class BlobMetrics(object):
 
         region2voxel = {}
 
-        for region in region_numbers:
-            print('region {}'.format(region))
+        reg_pbar = tqdm(region_numbers)
+
+        for region in reg_pbar:
+            reg_pbar.set_description('Processing region {}'.format(region))
+
             voxels = np.where(registered_brain == region)
             region2voxel[region] = map(list, zip(*voxels))
 
         region_count = {}
 
-        for p in self.predicted_coords:
-            print('point {}'.format(p))
+        coord_pbar = tqdm(self.predicted_coords)
+
+        for p in coord_pbar:
+            coord_pbar.set_description('Processing centroid {}'.format(p))
+
             rp = self._find_region_for_point(p, region2voxel)
+            if rp == -1:
+                continue
             if id2name[rp] in region_count:
                 region_count[id2name[rp]] += 1
             else:
