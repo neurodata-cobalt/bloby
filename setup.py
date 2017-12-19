@@ -5,7 +5,7 @@ SCRIPT_SRC = './bloby.py'
 SCRIPT_PATH = './bin/bloby'
 
 def _get_python_path():
-	result = subprocess.run(['which', 'python'], stdout=subprocess.PIPE)
+	result = subprocess.run(['which', 'python3'], stdout=subprocess.PIPE)
 	return result.stdout.decode('utf-8').replace('\n', '')
 
 def _install_requirements():
