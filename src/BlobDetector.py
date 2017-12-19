@@ -4,6 +4,7 @@ from sklearn.mixture import GaussianMixture
 from skimage import measure
 from skimage.morphology import binary_erosion
 import scipy.stats
+from tqdm import tqdm
 
 class BlobDetector(object):
 
@@ -53,3 +54,23 @@ class BlobDetector(object):
 
         centroids = [[round(x.centroid[0]), round(x.centroid[1]), round(x.centroid[2])] for x in measure.regionprops(labeled_img)]
         return centroids
+
+    def get_avg_intensity_by_region(self, reg_atlas_path):
+        reg_img = imread(reg_atlas_path).astype(np.uint16)
+        raw_img = self.img.astype(np.uint16)
+
+        region_numbers = np.unique(reg_img, return_counts=True)[0]
+
+        region_intensities = {}
+
+        rgn_pbar = tqdm(region_numbers)
+
+
+        for rgn in rgn_pbar:
+            rgn_pbar.set_description('Summing intensities of region {}'.format(rgn))
+
+            voxels = np.where(reg_img == rgn)
+            voxels = map(list, zip(*voxels))
+            region_intensities[str(rgn)] = float(np.sum([raw_img[v[0], v[1], v[2]] for v in voxels]))
+
+        return region_intensities

@@ -327,16 +327,16 @@ class BlobMetrics(object):
             else:
                 region_count[id2name[rp]] = 1
 
-        return region_count
+        return [id2name, region_count]
 
     def plot_region_based_count(self, count_statistics=None, fig_path=None):
         count_statistics = sorted(count_statistics.items(), key=operator.itemgetter(1))
         count_statistics.reverse()
 
         bar_x = np.arange(5)
-        bar_y = [c[1] for c in count_statistics[:5]]
+        bar_y = [(float(c[1])/len(self.predicted_coords)) for c in count_statistics[:5]]
         labels = [c[0] for c in count_statistics[:5]]
-        colors = ['red', 'green', 'blue', 'cyan', 'magenta', 'yellow', 'orange', 'purple', 'black', 'gray']
+        colors = ['red', 'green', 'blue', 'cyan', 'magenta']
 
         (fig, ax) = plt.subplots()
 
@@ -344,10 +344,46 @@ class BlobMetrics(object):
             ax.bar(i, y, label=labels[i], color=colors[i], width=0.8, align='center', alpha=0.6)
 
         ax.set_xlabel('Region', fontsize=12)
-        ax.set_ylabel('Count', fontsize=12)
+        ax.set_ylabel('Frequency', fontsize=12)
         #plt.xticks(list(counts.keys()), list(counts.keys()))
-        ax.get_xaxis().set_visible(False)
+        ax.get_xaxis().set_ticks([])
         ax.set_title('Region wise cell count',
+                     fontsize=16)
+        ax.legend()
+
+        if fig_path:
+            plt.savefig(fig_path)
+        else:
+            plt.show()
+
+    def plot_intensity_mapping(self, region_intensities, reg_atlas_tif, id2name, fig_path=None):
+        total_intensity = np.sum(list(region_intensities.values()))
+        for k in region_intensities.keys():
+            region_intensities[k] = float(region_intensities[k]) / float(total_intensity)
+
+        reg_atlas = imread(reg_atlas_tif)
+        region_numbers = np.unique([reg_atlas[int(p[0]), int(p[1]), int(p[2])] for p in self.predicted_coords])
+        intensity_stats = {reg: region_intensities[str(reg)] for reg in region_numbers}
+
+        intensity_stats = sorted(intensity_stats.items(), key=operator.itemgetter(1))
+        intensity_stats.reverse()
+
+
+        bar_x = np.arange(5)
+        bar_y = [v[1] for v in intensity_stats[:5]]
+        labels = [id2name[v[0]] for v in intensity_stats[:5]]
+        colors = ['red', 'green', 'blue', 'cyan', 'magenta']
+
+        (fig, ax) = plt.subplots()
+
+        for i,y in enumerate(bar_y):
+            ax.bar(i, y, label=labels[i], color=colors[i], width=0.8, align='center', alpha=0.6)
+
+        ax.set_xlabel('Region', fontsize=12)
+        ax.set_ylabel('Intensity', fontsize=12)
+
+        ax.get_xaxis().set_ticks([])
+        ax.set_title('Region wise intensity sum',
                      fontsize=16)
         ax.legend()
 
