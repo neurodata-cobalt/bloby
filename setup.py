@@ -10,7 +10,7 @@ def _get_python_path():
 
 def _install_requirements():
 	print('Installing Bloby requirements...')
-	subprocess.run(['pip', 'install', '-r', 'requirements.txt'])
+	subprocess.run(['pip3', 'install', '-r', 'requirements.txt'])
 
 def _create_bin_script():
 	print('Creating executable...')
