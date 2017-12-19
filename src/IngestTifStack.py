@@ -65,7 +65,7 @@ class IngestTifStack(object):
                 img = img.astype('uint64')
 
         self.upload_to_boss(rmt, img, channel_rsc)
-        url = 'http://ben-dev.neurodata.io:8001/ndviz_url/' + coll_name + '/' + exp_name + '/' + chan_name + '/'
+        url = 'https://ndwebtools.neurodata.io/ndviz_url/{}/{}/'.format(coll_name, exp_name)
         return url
 
         if group_name:
