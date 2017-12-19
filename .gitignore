@@ -112,3 +112,5 @@ ENV/
 *.tif
 .DS_Store
 *.csv
+
+bin/bloby
