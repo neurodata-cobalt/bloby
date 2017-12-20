@@ -77,3 +77,4 @@ You should see a message showing the successful upload to BOSS with a URL!
 ## Other resources:
 
 * [Blob detection algorithm pseudocode](https://github.com/NeuroDataDesign/bloby/wiki/Detection-Algorithm-Pseudocode)
+* [Dev docs](https://neurodatadesign.github.io/bloby/)
