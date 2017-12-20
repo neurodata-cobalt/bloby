@@ -113,3 +113,4 @@ ENV/
 .DS_Store
 
 bin/bloby
+.docker-env
