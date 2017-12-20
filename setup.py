@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+from pyfiglet import Figlet
 
 def _install_requirements():
 	print('Installing Bloby requirements...')
@@ -14,6 +15,8 @@ def install():
 	color_init()
 
 	print(Fore.GREEN + 'Bloby setup successful!')
+	f = Figlet(font='slant')
+	print(f.renderText('Bloby'))
 
 if __name__ == '__main__':
 	task = sys.argv[1]
