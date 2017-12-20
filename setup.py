@@ -13,7 +13,7 @@ def install():
 	from colorama import Fore
 	color_init()
 
-	print(Fore.GREEN + 'Bloby setup successful! Run {} to start the Bloby CLI'.format(SCRIPT_PATH))
+	print(Fore.GREEN + 'Bloby setup successful!)
 
 if __name__ == '__main__':
 	task = sys.argv[1]
