@@ -1,9 +1,12 @@
+"""Utility functions"""
+
 import csv
 import tifffile as tiff
 import numpy as np
 import os
 
 def get_list_from_csv(csv_file_path, parse_float=True, skip_header=False):
+    """Given a CSV file, converts it to list"""
     def _parse_float_array(arr):
         return [float(item) for item in arr]
 
@@ -19,6 +22,7 @@ def get_list_from_csv(csv_file_path, parse_float=True, skip_header=False):
     return parsed_list[1:] if skip_header else parsed_list
 
 def plot_csv_on_tif(centroids, reference_img_path, tif_output_path):
+    """Given a CSV file, plots the co-ordinates in the CSV on a TIF stack"""
     def _parse_int_array(arr):
         return [int(item) for item in arr]
 
@@ -46,18 +50,20 @@ def plot_csv_on_tif(centroids, reference_img_path, tif_output_path):
     tiff.imsave(tif_output_path, annotated_image.astype(np.uint8))
 
 def write_list_to_csv(arr, csv_output_path):
+    """Given a list, writes it to a CSV file"""
     with open(csv_output_path, 'w') as csv_file:
         for item in arr:
             csv_file.write(','.join([str(x) for x in item]) + '\n')
 
 def create_intern_config():
-	INTERN_CFG = 'intern.cfg'
-	if os.path.exists(INTERN_CFG):
-		os.remove(INTERN_CFG)
+    """Creates intern.cfg file from BOSS_TOKEN environment variable"""
+    INTERN_CFG = 'intern.cfg'
+    if os.path.exists(INTERN_CFG):
+        os.remove(INTERN_CFG)
 
-	boss_token = os.environ['BOSS_TOKEN']
-	with open('intern_cfg_tmpl', 'r') as cfg_file:
-		cfg_str = cfg_file.read()
+    boss_token = os.environ['BOSS_TOKEN']
+    with open('intern_cfg_tmpl', 'r') as cfg_file:
+        cfg_str = cfg_file.read()
 
-	with open('intern.cfg', 'w') as cfg_file:
-		cfg_file.write(cfg_str.format(boss_token))
+    with open('intern.cfg', 'w') as cfg_file:
+        cfg_file.write(cfg_str.format(boss_token))

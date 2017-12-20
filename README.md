@@ -11,7 +11,7 @@ Docker is currently available on OS X El Capitan 10.11 and newer macOS releases,
 
 The only software dependency needed if using the recommended method is Docker. The following dependencies are included in the Docker Image.
 
-Python depedencies: <br/>
+Python depedencies:
 
 colorama --- 0.3.9<br/>
 scikit_image --- 0.13.1<br/>
@@ -53,7 +53,7 @@ BOSS_TOKEN=<your_boss_token>
 In order to use the functionality built into this Docker image, you need to run the Docker image:
 
 ```
-docker run -p 3000:3000 --env-file .docker-env srivathsapv/bloby
+docker run -p 3000:3000 --env-file .docker-env srivathsapv/bloby:init_version
 ```
 
 This should print a link to the terminal console that looks like this: <br/>

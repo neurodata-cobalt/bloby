@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+"""This class is used for quantitative evaluation of detected results"""
 
 import numpy as np
 import math
@@ -9,7 +8,21 @@ import json
 import operator
 from tqdm import tqdm
 
+__docformat__ = 'reStructuredText'
+
 class BlobMetrics(object):
+
+    """
+    BlobMetrics class can be instantiated with the following args
+
+    - **parameters**, **types**, **return** and **return types**::
+    :param ground_truth_coords: full path to the CSV file having annotations
+    :param predicted_coords: full path to the CSV file having the predictions
+    :param euclidean_distance_threshold: (optional) euclidean distance in voxels, within which a ground truth and prediction are considered as a hit
+    :type ground_truth_coords: list [z,y,x]
+    :type predicted_coords: list [z,y,x]
+    :type euclidean_distance_threshold: integer
+    """
 
     def __init__(
         self,
@@ -92,15 +105,19 @@ class BlobMetrics(object):
         return [nearest_point, min_dist]
 
     def accuracy(self):
+        """True positives / Number of ground truth labels"""
         return round(self.tp / float(len(self.ground_truth_coords)) * 100, 3)
 
     def precision(self):
+        """True positives / true positives + false positives"""
         return round(self.tp / (self.tp + self.fp), 3)
 
     def recall(self):
+        """True positives / true positives + false negatives"""
         return round(self.tp / (self.tp + self.fn), 3)
 
     def mean_square_error(self, edist=None):
+        """Sum of euclidean distances between predicted and ground truth labels"""
         if edist == None:
             edist = self.edist
 
@@ -120,18 +137,21 @@ class BlobMetrics(object):
         return round(square_error_sum / n, 3)
 
     def f_measure(self):
+        """(2 x precision x recall)/(precision + recall)"""
         p = self.precision()
         r = self.recall()
 
         return 2 * p * r / (p + r)
 
     def g_measure(self):
+        """sqrt(precision x recall)"""
         p = self.precision()
         r = self.recall()
 
         return math.sqrt(p * r)
 
     def plot_predictions_with_ground_truth(self, fname=None):
+        """Plots a visualization of predictions with ground truth labels"""
         x_gt = np.array([i[0] for i in self.ground_truth_coords])
         y_gt = np.array([i[1] for i in self.ground_truth_coords])
         z_gt = np.array([i[2] for i in self.ground_truth_coords])
@@ -177,6 +197,7 @@ class BlobMetrics(object):
             plt.show()
 
     def plot_accuracy_sensitivity(self):
+        """Plots change of accuracy with euclidean_distance_threshold"""
         edist_range = list(set([abs(i) for i in range(self.edist - 10,
                            self.edist + 11)]))
         accuracies = []
@@ -197,6 +218,7 @@ class BlobMetrics(object):
         plt.show()
 
     def plot_fmeasure_sensitivity(self):
+        """Plots change of F-Measure with euclidean_distance_threshold"""
         edist_range = list(set([abs(i) for i in range(self.edist - 10,
                            self.edist + 11)]))
         fmeasures = []
@@ -220,6 +242,7 @@ class BlobMetrics(object):
         plt.show()
 
     def plot_mean_square_error_sensitivity(self):
+        """Plots change of mean square error with euclidean_distance_threshold"""
         edist_range = list(set([abs(i) for i in range(self.edist - 10,
                            self.edist + 11)]))
         mse = []
@@ -238,6 +261,7 @@ class BlobMetrics(object):
         plt.show()
 
     def plot_predictions_per_ground_truth(self, fname=None):
+        """Plots a bar graph of number of predictions for each ground truth"""
         counts = {}
         for p in self.ground_truth_coords:
             (_, _, candidate_points) = \
@@ -267,6 +291,7 @@ class BlobMetrics(object):
             plt.show()
 
     def plot_ground_truths_per_prediction(self, fname=None):
+        """Plots a bar graph of number of ground truth labels for each prediction"""
         counts = {}
         for p in self.predicted_coords:
             (_, _, candidate_points) = \
@@ -279,7 +304,7 @@ class BlobMetrics(object):
                 counts[c] += 1
 
         (fig, ax) = plt.subplots()
-        
+
         total_count = sum(counts.values())
         for c in counts.keys():
             counts[c] = float(counts[c])/float(total_count)
@@ -306,6 +331,7 @@ class BlobMetrics(object):
         return id2name
 
     def get_region_based_count(self, ontology_file, registered_brain_tif):
+        """Given a region ontology file and a registered annotated brain, this method returns the number of predicted cells in each region"""
         ontology_json = json.load(open(ontology_file, 'r'))
         id2name = self._get_child_nodes_from_ontology(ontology_json, {})
 
@@ -339,6 +365,7 @@ class BlobMetrics(object):
         return [id2name, region_count]
 
     def plot_region_based_count(self, count_statistics=None, fig_path=None):
+        """Plots a number of cells in each region"""
         count_statistics = sorted(count_statistics.items(), key=operator.itemgetter(1))
         count_statistics.reverse()
 
@@ -366,6 +393,7 @@ class BlobMetrics(object):
             plt.show()
 
     def plot_intensity_mapping(self, region_intensities, reg_atlas_tif, id2name, fig_path=None):
+        """Plots intensity sum of each region"""
         total_intensity = np.sum(list(region_intensities.values()))
         for k in region_intensities.keys():
             region_intensities[k] = float(region_intensities[k]) / float(total_intensity)
