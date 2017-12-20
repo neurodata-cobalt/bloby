@@ -13,18 +13,18 @@ The only software dependency needed if using the recommended method is Docker. T
 
 Python depedencies: <br/>
 
-colorama --- 0.3.9
-scikit_image --- 0.13.1
-scipy --- 1.0.0
-numpy --- 1.13.1
-requests --- 2.18.4
-intern --- 0.9.4
-tifffile --- 0.12.1
-tqdm --- 4.19.5
-matplotlib --- 2.1.0
-progressbar2 --- 3.34.3
-scikit_learn --- 0.19.1
-pyfiglet --- 0.7.5
+colorama --- 0.3.9<br/>
+scikit_image --- 0.13.1<br/>
+scipy --- 1.0.0<br/>
+numpy --- 1.13.1<br/>
+requests --- 2.18.4<br/>
+intern --- 0.9.4<br/>
+tifffile --- 0.12.1<br/>
+tqdm --- 4.19.5<br/>
+matplotlib --- 2.1.0<br/>
+progressbar2 --- 3.34.3<br/>
+scikit_learn --- 0.19.1<br/>
+pyfiglet --- 0.7.5<br/>
 
 ### Versions tested on
 We have tested the Docker image and build on macOS High Sierra (on MacBook Pro with 2.9 GHz Intel Core i7 and 16 GB RAM) and Ubuntu Xenial 16.04.3 LTS.
