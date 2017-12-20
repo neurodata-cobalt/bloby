@@ -1,6 +1,7 @@
 import csv
 import tifffile as tiff
 import numpy as np
+import os
 
 def get_list_from_csv(csv_file_path, parse_float=True, skip_header=False):
     def _parse_float_array(arr):
@@ -48,3 +49,15 @@ def write_list_to_csv(arr, csv_output_path):
     with open(csv_output_path, 'w') as csv_file:
         for item in arr:
             csv_file.write(','.join([str(x) for x in item]) + '\n')
+
+def create_intern_config():
+	INTERN_CFG = 'intern.cfg'
+	if os.path.exists(INTERN_CFG):
+		os.remove(INTERN_CFG)
+
+	boss_token = os.environ['BOSS_TOKEN']
+	with open('intern_cfg_tmpl', 'r') as cfg_file:
+		cfg_str = cfg_file.read()
+
+	with open('intern.cfg', 'w') as cfg_file:
+		cfg_file.write(cfg_str.format(boss_token))

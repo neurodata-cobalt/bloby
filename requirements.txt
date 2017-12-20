@@ -9,3 +9,4 @@ tqdm==4.19.5
 matplotlib==2.1.0
 progressbar2==3.34.3
 scikit_learn==0.19.1
+pyfiglet=0.7.5
