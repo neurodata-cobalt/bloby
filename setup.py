@@ -1,7 +1,6 @@
 import sys
 import os
 import subprocess
-from pyfiglet import Figlet
 
 def _install_requirements():
 	print('Installing Bloby requirements...')
@@ -12,6 +11,8 @@ def install():
 
 	from colorama import init as color_init
 	from colorama import Fore
+	from pyfiglet import Figlet
+
 	color_init()
 
 	print(Fore.GREEN + 'Bloby setup successful!')
