@@ -13,7 +13,7 @@ def install():
 	from colorama import Fore
 	color_init()
 
-	print(Fore.GREEN + 'Bloby setup successful!)
+	print(Fore.GREEN + 'Bloby setup successful!')
 
 if __name__ == '__main__':
 	task = sys.argv[1]
