@@ -23,8 +23,8 @@ ground_truth = util.get_list_from_csv(ground_truth_path)
 metrics = BlobMetrics(ground_truth, centroids, euclidean_distance_threshold=12)
 print('Precision: {}\nRecall: {}'.format(metrics.precision(), metrics.recall()))
 
-metrics.plot_predictions_per_ground_truth()
-metrics.plot_ground_truths_per_prediction()
+metrics.plot_predictions_per_ground_truth(fname='pr_gt.png')
+metrics.plot_ground_truths_per_prediction(fname='gt_pr.png')
 
 print('**************************BOSS UPLOAD**************************')
 
