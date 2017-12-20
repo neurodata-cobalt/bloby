@@ -1,3 +1,5 @@
+"""This class is the core detector for this package"""
+
 from tifffile import imread
 import numpy as np
 from sklearn.mixture import GaussianMixture
@@ -6,7 +8,20 @@ from skimage.morphology import binary_erosion
 import scipy.stats
 from tqdm import tqdm
 
+__docformat__ = 'reStructuredText'
+
 class BlobDetector(object):
+
+
+    """
+    BlobDetector class can be instantiated with the following args
+
+    - **parameters**, **types**, **return** and **return types**::
+    :param tif_img_path: full path of the input TIF stack
+    :param n_components: number of intensity clusters in the image (this will be automatically detected in future versions)
+    :type tif_img_path: string
+    :type n_components: integer
+    """
 
     def __init__(self, tif_img_path, n_components=3):
         self.img = imread(tif_img_path)
@@ -40,6 +55,10 @@ class BlobDetector(object):
         return new_img
 
     def get_blob_centroids(self):
+        """
+        Gets the blob centroids based on GMM thresholding, erosion and connected components
+        """
+
         uniq = np.unique(self.img, return_counts=True)
 
         data_points = [p for p in zip(*uniq)]
@@ -56,6 +75,10 @@ class BlobDetector(object):
         return centroids
 
     def get_avg_intensity_by_region(self, reg_atlas_path):
+        """
+        Given registered atlas image path, gives the average intensity of the regions
+        """
+        
         reg_img = imread(reg_atlas_path).astype(np.uint16)
         raw_img = self.img.astype(np.uint16)
 
