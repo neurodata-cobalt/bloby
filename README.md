@@ -34,7 +34,7 @@ We have tested the Docker image and build on macOS High Sierra (on MacBook Pro w
 Once Docker is installed on your machine, pull the `srivathsapv/bloby` image from Docker Hub [here](https://hub.docker.com/r/srivathsapv/bloby) as follows: <br/>
 
 ```
-docker pull srivathsapv/bloby
+docker pull srivathsapv/bloby:init_version
 ```
 
 It will typically take around 3 minutes to pull the entire Docker image.
