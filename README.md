@@ -47,13 +47,13 @@ Create a `.docker-env` file and add your `BOSS_TOKEN` value as follows. This is 
 for visualization
 
 ```
-BOSS_TOKEN="<your_boss_token>"
+BOSS_TOKEN=<your_boss_token>
 ```
 
 In order to use the functionality built into this Docker image, you need to run the Docker image:
 
 ```
-docker run -p 3000:3000 -e .docker-env srivathsapv/bloby
+docker run -p 3000:3000 --env-file .docker-env srivathsapv/bloby
 ```
 
 This should print a link to the terminal console that looks like this: <br/>
