@@ -1,26 +1,70 @@
-# Blob Detection package
+# _bloby_
+Package that performs blob detection on 3D TIF Stacks <br/>
 
-Pipeline for detecting cells in clarity images.
+## Sytem Requirements
 
-Our first iteration is to implement [Efficient Small Blob Detection Based on Local Convexity, Intensity and Shape Information](http://ieeexplore.ieee.org/abstract/document/7359134/).
-And evaluate it on synthetic and manually annotated data.
+The recommended way to use this package is to install [Docker](https://store.docker.com/search?offering=community&type=edition).
+Docker is currently available on OS X El Capitan 10.11 and newer macOS releases, the following Ubuntu versions: Zesty 17.04
+(LTS), Yakkety 16.10, Xenial 16.04 (LTS), Trusty 14.04 (LTS), and Windows 10.
 
-The package performs the following (tentative list):
-1. Reads in tif image
-2. Normalizes it
-3. Computes the DoG at 10 different scales
-4. Computes the Fast hessian based on the 3 principal minors
-5. Discovers possible blob candidates by finding all points with a negative-definite hessian (aka concave regions) along with its 6-connected component
-6. Calculates blob descriptors namely the "blobness", "flatness", and average intensity of blob candidate regions
-7. TODO: Post-prune the blob candidates using a clustering algorithm to find the true blobs
+### Software Dependencies (with version numbers)
 
-Backlog of Dev tasks:
-1. Add unit testing
-2. Add checkpoint support
- * Like how tensorflow has checkpoints after computaionally intensive steps, we should incorporate checkpoints after certain steps of our pipeline. Proposed checkpoints: after DoG, after finding blob candidates, between finding the blob descriptors for different scales.
-3. Add more preprocessing
-4. Add more logging and informative outputs
-5. Add support for configuration files
- * Like how Microsoft's CNTK has configuration files that hold all the parameters for the models, we should have a configuration file option for users to specify all the parameters they want to use.
-6. Configure Travis CI Pipeline
-7. Push the centroids marked data as an annotated channel to boss
+The only software dependency needed if using the recommended method is Docker. The following dependencies are included in the Docker Image.
+
+Python depedencies: <br/>
+
+colorama --- 0.3.9
+scikit_image --- 0.13.1
+scipy --- 1.0.0
+numpy --- 1.13.1
+requests --- 2.18.4
+intern --- 0.9.4
+tifffile --- 0.12.1
+tqdm --- 4.19.5
+matplotlib --- 2.1.0
+progressbar2 --- 3.34.3
+scikit_learn --- 0.19.1
+pyfiglet --- 0.7.5
+
+### Versions tested on
+We have tested the Docker image and build on macOS High Sierra (on MacBook Pro with 2.9 GHz Intel Core i7 and 16 GB RAM) and Ubuntu Xenial 16.04.3 LTS.
+
+## Installation Guide
+
+Once Docker is installed on your machine, pull the `srivathsapv/bloby` image from Docker Hub [here](https://hub.docker.com/r/srivathsapv/bloby) as follows: <br/>
+
+`docker pull srivathsapv/bloby` <br/>
+
+It will typically take around 3 minutes to pull the entire Docker image.
+
+## Demo
+
+### Instructions to run on data
+
+Create a `.docker-env` file and add your `BOSS_TOKEN` value as follows. This is needed to upload the detected centroids to BOSS
+for visualization
+
+```
+BOSS_TOKEN="<your_boss_token>"
+
+```
+
+In order to use the functionality built into this Docker image, you need to run the Docker image:
+
+`docker run -p 3000:3000 -e .docker-env srivathsapv/bloby` <br/>
+
+This should print a link to the terminal console that looks like this: <br/>
+
+`http://0.0.0.0:3000/?token=SOME_TOKEN` <br/>
+
+Go to this link in your browser by copying and pasting it. <br/>
+
+Next, click on `Package Usage.ipynb`. Once the notebook opens, you can run all cells by clicking on 'Cell' and then 'Run All'.
+
+The expected run time for this demo is < 10 seconds.
+
+### Expected Output
+
+You should see a message showing the successful upload to BOSS with a URL!
+
+## Congrats, you've succesfully run _bloby_!
