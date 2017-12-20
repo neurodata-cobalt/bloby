@@ -33,8 +33,8 @@ RUN pip3 install --upgrade pip
 RUN pip install ipython[all] jupyter
 
 WORKDIR /work
-ADD https://api.github.com/repos/neurodatadesign/bloby/git/refs/heads/basic_method version.json
-RUN git clone https://github.com/neurodatadesign/bloby.git /work/bloby --branch basic_method --single-branch
+ADD https://api.github.com/repos/neurodatadesign/bloby/git/refs/heads/master version.json
+RUN git clone https://github.com/neurodatadesign/bloby.git /work/bloby --branch master --single-branch
 WORKDIR /work/bloby
 
 ENV PYTHONPATH="/work/bloby"
