@@ -30,8 +30,6 @@ class BlobDetector(object):
 
     def _gmm_cluster(self, img, data_points, n_components):
         gmm = GaussianMixture(n_components=n_components, covariance_type='full').fit(data_points)
-        bic = gmm.bic(np.asarray(data_points))
-        aic = gmm.aic(np.asarray(data_points))
 
         cluster_centers = np.empty((n_components, len(data_points[0])))
 
@@ -54,9 +52,12 @@ class BlobDetector(object):
         new_img[img >= avg_intensity] = 255
         new_img[img < avg_intensity] = 0
 
+        self.threshold = avg_intensity
+        self.gmm = gmm
+
         return new_img
 
-    def get_blob_centroids(self):
+    def get_blob_centroids(self, min_diameter=None, max_diameter=None):
         """
         Gets the blob centroids based on GMM thresholding, erosion and connected components
         """
@@ -75,7 +76,14 @@ class BlobDetector(object):
 
         self.labeled_img = labeled_img
 
-        centroids = [[round(x.centroid[0]), round(x.centroid[1]), round(x.centroid[2])] for x in measure.regionprops(labeled_img)]
+        region_props = [x for x in measure.regionprops(labeled_img)]
+        if min_diameter:
+            region_props = [x for x in region_props if x.major_axis_length >= min_diameter]
+
+        if max_diameter:
+            region_props = [x for x in region_props if x.major_axis_length <= max_diameter]
+
+        centroids = [[round(x.centroid[0]), round(x.centroid[1]), round(x.centroid[2])] for x in region_props]
         return centroids
 
     def get_avg_intensity_by_region(self, reg_atlas_path):
