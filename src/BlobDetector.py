@@ -3,6 +3,7 @@
 from tifffile import imread
 import numpy as np
 from sklearn.mixture import GaussianMixture
+from sklearn.metrics import silhouette_score
 from skimage import measure
 from skimage.morphology import binary_erosion
 import scipy.stats
@@ -18,18 +19,20 @@ class BlobDetector(object):
 
     - **parameters**, **types**, **return** and **return types**::
     :param tif_img_path: full path of the input TIF stack
-    :param n_components: number of intensity clusters in the image (this will be automatically detected in future versions)
+    :param data_source: either 'laVision' or 'COLM' - the imaging source of the input image
     :type tif_img_path: string
-    :type n_components: integer
+    :type data_source: string
     """
 
-    def __init__(self, tif_img_path, n_components=3):
+    def __init__(self, tif_img_path, data_source):
         self.img = imread(tif_img_path)
-        self.n_components = n_components
+        self.n_components = 2 if data_source == 'COLM' else 3
 
     def _gmm_cluster(self, img, data_points, n_components):
         gmm = GaussianMixture(n_components=n_components, covariance_type='full').fit(data_points)
-        cluster_labels = gmm.predict(data_points)
+        bic = gmm.bic(np.asarray(data_points))
+        aic = gmm.aic(np.asarray(data_points))
+
         cluster_centers = np.empty((n_components, len(data_points[0])))
 
         for i in range(n_components):
@@ -43,7 +46,6 @@ class BlobDetector(object):
         medium_intensity = cluster_int[::-1][1]
 
         avg_intensity = (float(max_intensity) + float(medium_intensity))/2.0
-
         shape_z, shape_y, shape_x = img.shape
 
         new_img = np.ndarray((shape_z, shape_y, shape_x))
@@ -71,6 +73,8 @@ class BlobDetector(object):
         else:
             labeled_img = measure.label(eroded_img, background=0)
 
+        self.labeled_img = labeled_img
+
         centroids = [[round(x.centroid[0]), round(x.centroid[1]), round(x.centroid[2])] for x in measure.regionprops(labeled_img)]
         return centroids
 
@@ -78,7 +82,7 @@ class BlobDetector(object):
         """
         Given registered atlas image path, gives the average intensity of the regions
         """
-        
+
         reg_img = imread(reg_atlas_path).astype(np.uint16)
         raw_img = self.img.astype(np.uint16)
 
