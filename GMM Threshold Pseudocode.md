@@ -16,7 +16,7 @@ each cluster's mean intensity.
 
 4. Choose the `threshold` as the mean of the last 2 clusters' intensities.
 
-![gmm1](https://user-images.githubusercontent.com/1017519/36443912-1c1ea10e-1648-11e8-81f4-e5348b94ede0.png)
+![gmm1](https://user-images.githubusercontent.com/1017519/36445537-9b46d7b8-164c-11e8-918b-fa1af892dea6.png)
 
 From the above image we can see that the GMM is doing a poor job. Hence we go to the new algorithm which is explained here.
 
@@ -44,4 +44,4 @@ take the GMM model's cluster means and call it `cluster_means`.
 **Note**: In the new method, number of components is more because GMM now has more information and the model fit is more fine
 grained and the intensities are put into more fine grained bins.
 
-![gmm2](https://user-images.githubusercontent.com/1017519/36443566-24e2fc96-1647-11e8-8e13-4b99bbcb5d4a.png)
+![gmm2](https://user-images.githubusercontent.com/1017519/36445540-9f364b24-164c-11e8-8f18-0c79dd8b8fcd.png)
