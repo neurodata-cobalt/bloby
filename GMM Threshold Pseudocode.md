@@ -16,6 +16,10 @@ each cluster's mean intensity.
 
 4. Choose the `threshold` as the mean of the last 2 clusters' intensities.
 
+![gmm1](https://user-images.githubusercontent.com/1017519/36443912-1c1ea10e-1648-11e8-81f4-e5348b94ede0.png)
+
+From the above image we can see that the GMM is doing a poor job. Hence we go to the new algorithm which is explained here.
+
 ## New Algorithm (Changed on 02/19/2018)
 
 1. Read image into an array
