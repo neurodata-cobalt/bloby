@@ -1,11 +1,11 @@
 """This class is the core detector for this package"""
 
-from tifffile import imread
+from tifffile import imread, imsave
 import numpy as np
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score
 from skimage import measure
-from skimage.morphology import binary_erosion
+from skimage import morphology
 import scipy.stats
 from tqdm import tqdm
 
@@ -24,36 +24,35 @@ class BlobDetector(object):
     :type data_source: string
     """
 
-    def __init__(self, tif_img_path, data_source):
+    def __init__(self, tif_img_path, n_components=4):
         self.img = imread(tif_img_path)
-        self.n_components = 2 if data_source == 'COLM' else 3
+        self.n_components = n_components
 
     def _gmm_cluster(self, img, data_points, n_components):
-        gmm = GaussianMixture(n_components=n_components, covariance_type='full').fit(data_points)
+        gmm = GaussianMixture(n_components=n_components, covariance_type='full', verbose=2).fit(img.reshape(-1, 1)[::4])
 
-        cluster_centers = np.empty((n_components, len(data_points[0])))
+        cluster_intensities = gmm.means_.flatten()
+        cluster_intensities.sort()
 
-        for i in range(n_components):
-            density = scipy.stats.multivariate_normal(cov=gmm.covariances_[i], mean=gmm.means_[i], allow_singular=True).logpdf(data_points)
-            cluster_centers[i, :] = data_points[np.argmax(density)]
+        threshold = cluster_intensities[-1]
 
-        cluster_int = [p[0] for p in cluster_centers]
-        cluster_int.sort()
+        # if bi-modal then take the average otherwise take average of low and medium intensity to get the threshold
+        # if self.n_components == 2:
+        #     threshold = np.mean(cluster_intensities)
+        # else:
+        #     cluster_intensities.sort()
+        #     threshold = np.mean(cluster_intensities[:2])
 
-        max_intensity = cluster_int[::-1][0]
-        medium_intensity = cluster_int[::-1][1]
-
-        avg_intensity = (float(max_intensity) + float(medium_intensity))/2.0
         shape_z, shape_y, shape_x = img.shape
-
         new_img = np.ndarray((shape_z, shape_y, shape_x))
         np.copyto(new_img, img)
 
-        new_img[img >= avg_intensity] = 255
-        new_img[img < avg_intensity] = 0
+        new_img[img > threshold] = 255
+        new_img[img < threshold] = 0
 
-        self.threshold = avg_intensity
+        self.threshold = threshold
         self.gmm = gmm
+        self.thresholded_img = new_img
 
         return new_img
 
@@ -67,12 +66,13 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
-        eroded_img = binary_erosion(gm_img)
+        eroded_img = morphology.binary_erosion(gm_img)
 
-        if self.n_components == 2:
-            labeled_img = measure.label(gm_img, background=0)
-        else:
-            labeled_img = measure.label(eroded_img, background=0)
+        imsave('eroded_final.tiff', eroded_img.astype(np.uint8) * 255)
+        # if self.n_components == 2:
+        #     labeled_img = measure.label(gm_img, background=0)
+        # else:
+        labeled_img = measure.label(eroded_img, background=0)
 
         self.labeled_img = labeled_img
 

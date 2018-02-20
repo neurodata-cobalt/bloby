@@ -110,6 +110,7 @@ ENV/
 
 # tif files
 *.tif
+*.tiff
 .DS_Store
 
 bin/bloby
