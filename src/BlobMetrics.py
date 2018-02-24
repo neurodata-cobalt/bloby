@@ -277,7 +277,7 @@ class BlobMetrics(object):
 
         total_count = sum(counts.values())
         for c in counts.keys():
-            counts[c] = float(counts[c])/float(total_count)
+            counts[c] = float(counts[c]) #/float(total_count)
 
         ax.bar(list(counts.keys()), list(counts.values()))
         ax.set_xlabel('# predictions', fontsize=10)
@@ -307,7 +307,7 @@ class BlobMetrics(object):
 
         total_count = sum(counts.values())
         for c in counts.keys():
-            counts[c] = float(counts[c])/float(total_count)
+            counts[c] = float(counts[c]) #/float(total_count)
 
         ax.bar(list(counts.keys()), list(counts.values()))
         ax.set_xlabel('# ground truths', fontsize=10)

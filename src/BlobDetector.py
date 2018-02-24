@@ -4,8 +4,7 @@ from tifffile import imread, imsave
 import numpy as np
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score
-from skimage import measure
-from skimage import morphology
+from skimage import measure, transform, morphology
 import scipy.stats
 from tqdm import tqdm
 
@@ -24,39 +23,54 @@ class BlobDetector(object):
     :type data_source: string
     """
 
-    def __init__(self, tif_img_path, n_components=4):
+    def __init__(self, tif_img_path, n_components=4, threshold=5000):
         self.img = imread(tif_img_path)
         self.n_components = n_components
+        self.threshold = threshold
 
     def _gmm_cluster(self, img, data_points, n_components):
         gmm = GaussianMixture(n_components=n_components, covariance_type='full', verbose=2).fit(img.reshape(-1, 1)[::4])
 
-        cluster_intensities = gmm.means_.flatten()
-        cluster_intensities.sort()
+        cluster_labels = gmm.predict(img.reshape(-1, 1))
 
-        threshold = cluster_intensities[-1]
-
-        # if bi-modal then take the average otherwise take average of low and medium intensity to get the threshold
-        # if self.n_components == 2:
-        #     threshold = np.mean(cluster_intensities)
-        # else:
-        #     cluster_intensities.sort()
-        #     threshold = np.mean(cluster_intensities[:2])
+        cluster_labels = cluster_labels.reshape(img.shape)
+        c_id = np.argmax(gmm.means_)
 
         shape_z, shape_y, shape_x = img.shape
         new_img = np.ndarray((shape_z, shape_y, shape_x))
-        np.copyto(new_img, img)
+        np.copyto(new_img, self.img)
+        new_img[cluster_labels == c_id] = 255
+        new_img[cluster_labels != c_id] = 0
 
-        new_img[img > threshold] = 255
-        new_img[img < threshold] = 0
-
-        self.threshold = threshold
-        self.gmm = gmm
         self.thresholded_img = new_img
 
         return new_img
 
-    def get_blob_centroids(self, min_diameter=None, max_diameter=None):
+    def _get_physical_length(self, rprop):
+        z, y, x = rprop.image.shape
+
+        if z <= 2 or y <= 2 or x <= 2:
+            return 0.0
+
+        rescaled_roi = transform.rescale(rprop.image, scale=[0.5, 0.5, 5], multichannel=False)
+        rescaled_roi[rescaled_roi != 0] = 255
+        label_img = measure.label(rescaled_roi, background=0)
+
+        rescaled_rprops = measure.regionprops(label_img)
+        return rescaled_rprops[0].major_axis_length
+
+    def _get_extended_region_props(self, region_props):
+        extended_region_props = []
+        for rprop in region_props:
+            extended_region_props.append({
+                'centroids': [round(rprop.centroid[0]), round(rprop.centroid[1]), round(rprop.centroid[2])],
+                'major_axis_length': self._get_physical_length(rprop),
+                'mean_intensity': rprop.mean_intensity,
+                'volume_in_vox': rprop.area
+            })
+        return extended_region_props
+
+    def get_blob_centroids(self):
         """
         Gets the blob centroids based on GMM thresholding, erosion and connected components
         """
@@ -66,24 +80,16 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
-        eroded_img = morphology.binary_erosion(gm_img)
+        eroded_img = morphology.erosion(gm_img)
+        eroded_img = eroded_img.astype(np.uint8) * 255
 
-        imsave('eroded_final.tiff', eroded_img.astype(np.uint8) * 255)
-        # if self.n_components == 2:
-        #     labeled_img = measure.label(gm_img, background=0)
-        # else:
+        self.processed_img = eroded_img
+
         labeled_img = measure.label(eroded_img, background=0)
 
-        self.labeled_img = labeled_img
+        extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
 
-        region_props = [x for x in measure.regionprops(labeled_img)]
-        if min_diameter:
-            region_props = [x for x in region_props if x.major_axis_length >= min_diameter]
-
-        if max_diameter:
-            region_props = [x for x in region_props if x.major_axis_length <= max_diameter]
-
-        centroids = [[round(x.centroid[0]), round(x.centroid[1]), round(x.centroid[2])] for x in region_props]
+        centroids = [rprop['centroids'] for rprop in extended_region_props if rprop['major_axis_length'] > 0]
         return centroids
 
     def get_avg_intensity_by_region(self, reg_atlas_path):
