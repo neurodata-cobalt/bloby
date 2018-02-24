@@ -23,10 +23,9 @@ class BlobDetector(object):
     :type data_source: string
     """
 
-    def __init__(self, tif_img_path, n_components=4, threshold=5000):
+    def __init__(self, tif_img_path, n_components=4):
         self.img = imread(tif_img_path)
         self.n_components = n_components
-        self.threshold = threshold
 
     def _gmm_cluster(self, img, data_points, n_components):
         gmm = GaussianMixture(n_components=n_components, covariance_type='full', verbose=2).fit(img.reshape(-1, 1)[::4])
