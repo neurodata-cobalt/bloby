@@ -34,7 +34,7 @@ We have tested the Docker image and build on macOS High Sierra (on MacBook Pro w
 Once Docker is installed on your machine, pull the `srivathsapv/bloby` image from Docker Hub [here](https://hub.docker.com/r/srivathsapv/bloby) as follows: <br/>
 
 ```
-docker pull srivathsapv/bloby:init_version
+docker pull srivathsapv/bloby
 ```
 
 It will typically take around 3 minutes to pull the entire Docker image.
@@ -53,7 +53,7 @@ BOSS_TOKEN=<your_boss_token>
 In order to use the functionality built into this Docker image, you need to run the Docker image:
 
 ```
-docker run -p 3000:3000 --env-file .docker-env srivathsapv/bloby:init_version
+docker run -p 3000:3000 --env-file .docker-env srivathsapv/bloby
 ```
 
 This should print a link to the terminal console that looks like this: <br/>
