@@ -42,7 +42,8 @@ class BlobDetector(object):
         if self.verbose:
             print('Image reshape')
 
-        gmm = GaussianMixture(n_components=n_components, covariance_type='spherical', verbose=2).fit(data_points)
+        v = 2 if self.verbose else 0
+        gmm = GaussianMixture(n_components=n_components, covariance_type='spherical', verbose=v).fit(data_points)
         self.gmm = gmm
 
         if self.verbose:
@@ -71,15 +72,10 @@ class BlobDetector(object):
         if self.verbose:
             print('Threshold chosen', self.threshold)
 
-        print('taking shape...')
         shape_z, shape_y, shape_x = img.shape
 
-        print('creating nd array')
         new_img = np.ndarray((shape_z, shape_y, shape_x))
-
-        print('upper threshold')
         new_img[img > self.threshold] = 255
-        print('lower threshold')
         new_img[img < self.threshold] = 0
 
         self.thresholded_img = new_img
@@ -117,7 +113,6 @@ class BlobDetector(object):
             z, y, x = [int(round(rprop.centroid[0])), int(round(rprop.centroid[1])), int(round(rprop.centroid[2]))]
             props = {
                 'centroids': [z, y, x],
-                #'major_axis_length': rprop.major_axis_length,
                 'mean_intensity': rprop.mean_intensity,
                 'volume_in_vox': rprop.area,
                 'label': rprop.label,
@@ -125,8 +120,6 @@ class BlobDetector(object):
                 'bbox': rprop.bbox,
                 'coords': rprop.coords
             }
-            calc_diameter = (0.239 * props['volume_in_vox']) ** (1.0/3.0)
-            props['calc_diameter'] = calc_diameter * 2
             extended_region_props.append(props)
         return extended_region_props
 
@@ -145,7 +138,7 @@ class BlobDetector(object):
             if self.verbose:
                 print('Opening operation of image')
 
-            #eroded_img = morphology.opening(gm_img)
+            eroded_img = morphology.opening(gm_img)
 
             labeled_img = measure.label(gm_img, background=0)
             extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
@@ -169,20 +162,9 @@ class BlobDetector(object):
         labeled_img = measure.label(eroded_img, background=0)
         extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
 
-        # strokes = [prop for prop in extended_region_props if prop['major_axis_length'] >= AXIS_LENGTH_CUTOFF]
-        # for stroke in strokes:
-        #     for c in stroke['coords']:
-        #         eroded_img[c[0], c[1], c[2]] = 0
-        #
-        # labeled_img = measure.label(eroded_img, background=0)
-        # extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
-
         self.processed_img = eroded_img
         self.extended_region_props = extended_region_props
 
-        # for s3617 - size was included >= 15 and span z max
-        # for atenolol2 - size was not considered and self.threshold was 1.5
-        # for iso1 - volume in vox >= 3
         if self.data_source == 'COLM':
             centroids = [rprop['centroids'] for rprop in extended_region_props if rprop['volume_in_vox'] >= 15]
         else:

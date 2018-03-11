@@ -79,12 +79,14 @@ class IngestTifStack(object):
 
         self._upload_to_boss(rmt, img, channel_rsc)
         url = 'https://ndwebtools.neurodata.io/ndviz_url/{}/{}/'.format(coll_name, exp_name)
-        return url
 
         if group_name:
-            self.change_permissions(group_name)
+            self._change_permissions(group_name)
+            
+        return url
 
     def _change_permissions(self, group_name):
+        print('_change_permissions', group_name)
         token, boss_url = self._get_boss_config()
 
         meta = BossMeta(self.args.collection, self.args.experiment, self.args.channel)
