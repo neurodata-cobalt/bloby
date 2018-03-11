@@ -25,26 +25,27 @@ class BlobDetector(object):
     :type data_source: string
     """
 
-    def __init__(self, tif_img_path, data_source='COLM'):
+    def __init__(self, tif_img_path, data_source='COLM', verbose=False):
         self.img = imread(tif_img_path)
         self.n_components = 4 if data_source == 'COLM' else 5
         self.data_source = data_source
+        self.verbose = verbose
 
-    def _gmm_cluster(self, img, data_points, n_components, verbose=False):
-        if verbose:
+    def _gmm_cluster(self, img, data_points, n_components):
+        if self.verbose:
             print('Starting GMM Cluster')
 
         num_pixels = len(img.flatten())
         scale_factor = 8 if num_pixels <= 3.6e7 else 64
         data_points = img.reshape(-1, 1)[::scale_factor]
 
-        if verbose:
+        if self.verbose:
             print('Image reshape')
 
         gmm = GaussianMixture(n_components=n_components, covariance_type='spherical', verbose=2).fit(data_points)
         self.gmm = gmm
 
-        if verbose:
+        if self.verbose:
             print('Fitting GMM')
 
         means = gmm.means_.flatten()
@@ -67,7 +68,7 @@ class BlobDetector(object):
                 break
 
         self.threshold = max_prob_th if not max_prob_th == 0.0 else (start_th + end_th)/2.0
-        if verbose:
+        if self.verbose:
             print('Threshold chosen', self.threshold)
 
         shape_z, shape_y, shape_x = img.shape
@@ -77,7 +78,7 @@ class BlobDetector(object):
         new_img[img < self.threshold] = 0
 
         self.thresholded_img = new_img
-        if verbose:
+        if self.verbose:
             print('Thresholding done successfully')
 
         return new_img
@@ -135,7 +136,7 @@ class BlobDetector(object):
         if self.data_source == 'COLM':
             eroded_img = morphology.erosion(gm_img)
         else:
-            if verbose:
+            if self.verbose:
                 print('Opening operation of image')
 
             eroded_img = morphology.opening(gm_img)
@@ -143,7 +144,7 @@ class BlobDetector(object):
             labeled_img = measure.label(eroded_img, background=0)
             extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
 
-            if verbose:
+            if self.verbose:
                 print('Removing larger chunks')
 
             large_chunks = [prop for prop in extended_region_props if prop['volume_in_vox'] >= CHUNK_VOL_CUTOFF]
@@ -156,7 +157,7 @@ class BlobDetector(object):
                 chunk = morphology.opening(chunk)
                 eroded_img[z_min:z_max, y_min:y_max, x_min:x_max] = chunk
 
-            if verbose:
+            if self.verbose:
                 print('Getting region props')
 
         labeled_img = measure.label(eroded_img, background=0)
