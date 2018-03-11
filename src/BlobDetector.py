@@ -32,7 +32,7 @@ class BlobDetector(object):
 
     def _gmm_cluster(self, img, data_points, n_components):
         num_pixels = len(img.flatten())
-        scale_factor = 8 if num_pixels <= 3.6e7 else 24
+        scale_factor = 8 if num_pixels <= 3.6e7 else 64
         data_points = img.reshape(-1, 1)[::scale_factor]
 
         gmm = GaussianMixture(n_components=n_components, covariance_type='spherical', verbose=2).fit(data_points)
@@ -97,7 +97,7 @@ class BlobDetector(object):
             z, y, x = [int(round(rprop.centroid[0])), int(round(rprop.centroid[1])), int(round(rprop.centroid[2]))]
             props = {
                 'centroids': [z, y, x],
-                'major_axis_length': rprop.major_axis_length,
+                #'major_axis_length': rprop.major_axis_length,
                 'mean_intensity': rprop.mean_intensity,
                 'volume_in_vox': rprop.area,
                 'label': rprop.label,
