@@ -82,11 +82,10 @@ class IngestTifStack(object):
 
         if group_name:
             self._change_permissions(group_name)
-            
+
         return url
 
     def _change_permissions(self, group_name):
-        print('_change_permissions', group_name)
         token, boss_url = self._get_boss_config()
 
         meta = BossMeta(self.args.collection, self.args.experiment, self.args.channel)

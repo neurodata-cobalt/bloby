@@ -132,6 +132,8 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
+        eroded_img = gm_img
+        
         if self.data_source == 'COLM':
             eroded_img = morphology.erosion(gm_img)
         else:
