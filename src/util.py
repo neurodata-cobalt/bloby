@@ -4,6 +4,51 @@ import csv
 import tifffile as tiff
 import numpy as np
 import os
+from scipy.interpolate import UnivariateSpline
+import numpy as np
+
+def curvature_splines(x, y=None, error=0.1):
+    """Calculate the signed curvature of a 2D curve at each point
+    using interpolating splines.
+
+    Parameters
+    ----------
+    x,y: numpy.array(dtype=float) shape (n_points, )
+         or
+         y=None and
+         x is a numpy.array(dtype=complex) shape (n_points, )
+
+         In the second case the curve is represented as a np.array
+         of complex numbers.
+
+    error : float
+        The admisible error when interpolating the splines
+
+    Returns
+    -------
+    curvature: numpy.array shape (n_points, )
+
+    Note: This is 2-3x slower (1.8 ms for 2000 points) than `curvature_gradient`
+    but more accurate, especially at the borders.
+    """
+
+    # handle list of complex case
+    if y is None:
+        x, y = x.real, x.imag
+
+    t = np.arange(x.shape[0])
+    std = error * np.ones_like(x)
+
+    fx = UnivariateSpline(t, x, k=4, w=1 / np.sqrt(std))
+    fy = UnivariateSpline(t, y, k=4, w=1 / np.sqrt(std))
+
+    xˈ = fx.derivative(1)(t)
+    xˈˈ = fx.derivative(2)(t)
+    yˈ = fy.derivative(1)(t)
+    yˈˈ = fy.derivative(2)(t)
+    curvature = (xˈ* yˈˈ - yˈ* xˈˈ) / np.power(xˈ** 2 + yˈ** 2, 3 / 2)
+    return curvature
+
 
 def get_list_from_csv(csv_file_path, parse_float=True, skip_header=False):
     """Given a CSV file, converts it to list"""
@@ -21,7 +66,7 @@ def get_list_from_csv(csv_file_path, parse_float=True, skip_header=False):
 
     return parsed_list[1:] if skip_header else parsed_list
 
-def plot_csv_on_rgb_tif(centroids, reference_img_path, tif_output_path, color=[10000, 0, 0]):
+def plot_csv_on_rgb_tif(centroids, reference_img_path, tif_output_path, color=[10000, 0, 0], dtype=np.uint16):
     """Given a CSV file, plots the co-ordinates in the CSV on a RGB TIF stack"""
     def _parse_int_array(arr):
         return [int(item) for item in arr]
@@ -56,7 +101,7 @@ def plot_csv_on_rgb_tif(centroids, reference_img_path, tif_output_path, color=[1
     for i, c in enumerate(centroids):
         new_img = _draw_square(new_img, c)
 
-    tiff.imsave(tif_output_path, new_img.astype(np.uint16))
+    tiff.imsave(tif_output_path, new_img.astype(dtype))
 
 def plot_csv_on_tif(centroids, reference_img_path, tif_output_path):
     """Given a CSV file, plots the co-ordinates in the CSV on a TIF stack"""

@@ -7,12 +7,14 @@ from sklearn.metrics import silhouette_score
 from skimage import measure, transform, morphology
 import scipy.stats
 from tqdm import tqdm
+from scipy.ndimage.filters import gaussian_filter
 
 __docformat__ = 'reStructuredText'
 
+CHUNK_VOL_CUTOFF = 5000
+AXIS_LENGTH_CUTOFF = 15
+
 class BlobDetector(object):
-
-
     """
     BlobDetector class can be instantiated with the following args
 
@@ -23,23 +25,45 @@ class BlobDetector(object):
     :type data_source: string
     """
 
-    def __init__(self, tif_img_path, n_components=4):
+    def __init__(self, tif_img_path, data_source='COLM'):
         self.img = imread(tif_img_path)
-        self.n_components = n_components
+        self.n_components = 4 if data_source == 'COLM' else 5
+        self.data_source = data_source
 
     def _gmm_cluster(self, img, data_points, n_components):
-        gmm = GaussianMixture(n_components=n_components, covariance_type='full', verbose=2).fit(img.reshape(-1, 1)[::4])
+        num_pixels = len(img.flatten())
+        scale_factor = 8 if num_pixels <= 3.6e7 else 24
+        data_points = img.reshape(-1, 1)[::scale_factor]
 
-        cluster_labels = gmm.predict(img.reshape(-1, 1))
+        gmm = GaussianMixture(n_components=n_components, covariance_type='spherical', verbose=2).fit(data_points)
+        self.gmm = gmm
 
-        cluster_labels = cluster_labels.reshape(img.shape)
-        c_id = np.argmax(gmm.means_)
+        means = gmm.means_.flatten()
+        stdev = np.sqrt(gmm.covariances_.flatten())
+        max_index = np.argmax(means)
+
+        start_th = int(means[max_index] - (stdev[max_index]/2))
+        end_th = int(means[max_index] + (stdev[max_index]/2))
+
+        max_prob = 0.0
+        max_prob_th = 0.0
+
+        max_comparison = 1.0 if img.max() >= 63000 else 0.92
+
+        for th in range(start_th, end_th, 25):
+            prob = max(gmm.predict_proba([[th]]).flatten())
+            if prob >= max_comparison:
+                max_prob = prob
+                max_prob_th = th
+                break
+
+        self.threshold = max_prob_th if not max_prob_th == 0.0 else (start_th + end_th)/2.0
 
         shape_z, shape_y, shape_x = img.shape
         new_img = np.ndarray((shape_z, shape_y, shape_x))
-        np.copyto(new_img, self.img)
-        new_img[cluster_labels == c_id] = 255
-        new_img[cluster_labels != c_id] = 0
+
+        new_img[img > self.threshold] = 255
+        new_img[img < self.threshold] = 0
 
         self.thresholded_img = new_img
 
@@ -58,37 +82,82 @@ class BlobDetector(object):
         rescaled_rprops = measure.regionprops(label_img)
         return rescaled_rprops[0].major_axis_length
 
+    def _span_z_max(self, z, y, x, z_range=4):
+        ints = []
+        r_start = max(0, z-z_range)
+        r_end = min(z+z_range+1, self.img.shape[0] - 1)
+        r = range(r_start, r_end)
+        for z_index in r:
+            ints.append(self.img[z_index, y, x])
+        return max(ints)
+
     def _get_extended_region_props(self, region_props):
         extended_region_props = []
         for rprop in region_props:
-            extended_region_props.append({
-                'centroids': [round(rprop.centroid[0]), round(rprop.centroid[1]), round(rprop.centroid[2])],
-                'major_axis_length': self._get_physical_length(rprop),
+            z, y, x = [int(round(rprop.centroid[0])), int(round(rprop.centroid[1])), int(round(rprop.centroid[2]))]
+            props = {
+                'centroids': [z, y, x],
+                'major_axis_length': rprop.major_axis_length,
                 'mean_intensity': rprop.mean_intensity,
-                'volume_in_vox': rprop.area
-            })
+                'volume_in_vox': rprop.area,
+                'label': rprop.label,
+                'span_z_max': self._span_z_max(z, y, x),
+                'bbox': rprop.bbox,
+                'coords': rprop.coords
+            }
+            calc_diameter = (0.239 * props['volume_in_vox']) ** (1.0/3.0)
+            props['calc_diameter'] = calc_diameter * 2
+            extended_region_props.append(props)
         return extended_region_props
 
     def get_blob_centroids(self):
         """
         Gets the blob centroids based on GMM thresholding, erosion and connected components
         """
-
         uniq = np.unique(self.img, return_counts=True)
 
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
-        eroded_img = morphology.erosion(gm_img)
-        eroded_img = eroded_img.astype(np.uint8) * 255
+        if self.data_source == 'COLM':
+            eroded_img = morphology.erosion(gm_img)
+        else:
+            eroded_img = morphology.opening(gm_img)
 
-        self.processed_img = eroded_img
+            labeled_img = measure.label(eroded_img, background=0)
+            extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
+
+            large_chunks = [prop for prop in extended_region_props if prop['volume_in_vox'] >= CHUNK_VOL_CUTOFF]
+
+            for region in large_chunks:
+                z_min, y_min, x_min, z_max, y_max, x_max = region['bbox']
+                chunk = self.img[z_min:z_max, y_min:y_max, x_min:x_max]
+                chunk[chunk <= self.threshold * 1.75] = 0
+                chunk[chunk >= self.threshold * 1.75] = 255
+                chunk = morphology.opening(chunk)
+                eroded_img[z_min:z_max, y_min:y_max, x_min:x_max] = chunk
 
         labeled_img = measure.label(eroded_img, background=0)
-
         extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
 
-        centroids = [rprop['centroids'] for rprop in extended_region_props if rprop['major_axis_length'] > 0]
+        # strokes = [prop for prop in extended_region_props if prop['major_axis_length'] >= AXIS_LENGTH_CUTOFF]
+        # for stroke in strokes:
+        #     for c in stroke['coords']:
+        #         eroded_img[c[0], c[1], c[2]] = 0
+        #
+        # labeled_img = measure.label(eroded_img, background=0)
+        # extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
+
+        self.processed_img = eroded_img
+        self.extended_region_props = extended_region_props
+
+        # for s3617 - size was included >= 15 and span z max
+        # for atenolol2 - size was not considered and self.threshold was 1.5
+        # for iso1 - volume in vox >= 3
+        if self.data_source == 'COLM':
+            centroids = [rprop['centroids'] for rprop in extended_region_props if rprop['volume_in_vox'] >= 15]
+        else:
+            centroids = [rprop['centroids'] for rprop in extended_region_props if rprop['volume_in_vox'] >= 3]
         return centroids
 
     def get_avg_intensity_by_region(self, reg_atlas_path):
@@ -104,7 +173,6 @@ class BlobDetector(object):
         region_intensities = {}
 
         rgn_pbar = tqdm(region_numbers)
-
 
         for rgn in rgn_pbar:
             rgn_pbar.set_description('Summing intensities of region {}'.format(rgn))

@@ -28,7 +28,7 @@ class BlobMetrics(object):
         self,
         ground_truth_coords,
         predicted_coords,
-        euclidean_distance_threshold=0,
+        euclidean_distance_threshold=25,
         ):
         self.ground_truth_coords = ground_truth_coords
         self.predicted_coords = predicted_coords
@@ -73,8 +73,9 @@ class BlobMetrics(object):
             dist_info = point_map[k]
             dist_info = sorted(dist_info, key=lambda l: l['edist'])
             if len(dist_info) > 0:
-                predicted_points_with_match.add(repr(dist_info[0]['point'
-                        ]))
+                predicted_points_with_match.add(repr(dist_info[0]['point']))
+
+        self.true_positives = predicted_points_with_match
 
         return float(len(list(predicted_points_with_match)))
 

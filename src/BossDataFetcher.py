@@ -60,6 +60,7 @@ def cast_uint8(data, dtype):
 def fetch_data_from_boss(params):
     config = configparser.ConfigParser()
     config.read(params['config'])
+    
     host, token = [config['Default']['host'], config['Default']['token']]
     myResource = NeuroDataResource(host,
                                   token,
