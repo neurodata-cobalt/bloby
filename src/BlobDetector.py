@@ -27,7 +27,7 @@ class BlobDetector(object):
 
     def __init__(self, tif_img_path, data_source='COLM', verbose=False):
         self.img = imread(tif_img_path)
-        self.n_components = 4 if data_source == 'COLM' else 5
+        self.n_components = 4 if data_source == 'COLM' else 4
         self.data_source = data_source
         self.verbose = verbose
 
@@ -71,13 +71,19 @@ class BlobDetector(object):
         if self.verbose:
             print('Threshold chosen', self.threshold)
 
+        print('taking shape...')
         shape_z, shape_y, shape_x = img.shape
+
+        print('creating nd array')
         new_img = np.ndarray((shape_z, shape_y, shape_x))
 
+        print('upper threshold')
         new_img[img > self.threshold] = 255
+        print('lower threshold')
         new_img[img < self.threshold] = 0
 
         self.thresholded_img = new_img
+
         if self.verbose:
             print('Thresholding done successfully')
 
