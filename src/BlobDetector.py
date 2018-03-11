@@ -145,9 +145,9 @@ class BlobDetector(object):
             if self.verbose:
                 print('Opening operation of image')
 
-            eroded_img = morphology.opening(gm_img)
+            #eroded_img = morphology.opening(gm_img)
 
-            labeled_img = measure.label(eroded_img, background=0)
+            labeled_img = measure.label(gm_img, background=0)
             extended_region_props = self._get_extended_region_props(measure.regionprops(labeled_img, self.img))
 
             if self.verbose:
