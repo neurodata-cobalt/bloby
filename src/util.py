@@ -103,7 +103,7 @@ def plot_csv_on_rgb_tif(centroids, reference_img_path, tif_output_path, color=[1
 
     tiff.imsave(tif_output_path, new_img.astype(dtype))
 
-def plot_csv_on_tif(centroids, reference_img_path, tif_output_path):
+def plot_csv_on_tif(centroids, reference_img_path, tif_output_path, img_shape=None):
     """Given a CSV file, plots the co-ordinates in the CSV on a TIF stack"""
     def _parse_int_array(arr):
         return [int(item) for item in arr]
@@ -122,8 +122,11 @@ def plot_csv_on_tif(centroids, reference_img_path, tif_output_path):
 
         return image
 
-    ref_image = tiff.imread(reference_img_path)
-    shape_z, shape_y, shape_x = ref_image.shape
+    if reference_img_path:
+        ref_image = tiff.imread(reference_img_path)
+        shape_z, shape_y, shape_x = ref_image.shape
+    else:
+        shape_z, shape_y, shape_x = img_shape
 
     annotated_image = np.zeros((shape_z, shape_y, shape_x))
 
