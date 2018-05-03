@@ -205,7 +205,7 @@ def multicore_handler(data, coords):
     opath = 'process_folder/final.csv'.format(fname)
     imsave(fpath, data['raw_data'].astype(np.uint16))
 
-    detector = BlobDetector(fpath)
+    detector = BlobDetector(fpath, verbose=True)
     centroids = detector.get_blob_centroids()
     centroids = [[c[0] + z_start, c[1] + y_start, c[2] + x_start] for c in centroids]
     util.write_list_to_csv(centroids, opath, open_mode='a')
