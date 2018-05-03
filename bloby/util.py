@@ -135,9 +135,9 @@ def plot_csv_on_tif(centroids, reference_img_path, tif_output_path, img_shape=No
 
     tiff.imsave(tif_output_path, annotated_image.astype(np.uint8))
 
-def write_list_to_csv(arr, csv_output_path):
+def write_list_to_csv(arr, csv_output_path, open_mode='w'):
     """Given a list, writes it to a CSV file"""
-    with open(csv_output_path, 'w') as csv_file:
+    with open(csv_output_path, open_mode) as csv_file:
         for item in arr:
             csv_file.write(','.join([str(x) for x in item]) + '\n')
 

@@ -44,7 +44,7 @@ class BlobMetrics(object):
         tn = 0.0
 
         fp = float(abs(len(self.predicted_coords) - tp))
-        fn = float(abs(len(self.ground_truth_coords) - tp - fp))
+        fn = float(abs(len(self.ground_truth_coords) - tp))
 
         return [tp, tn, fp, fn]
 

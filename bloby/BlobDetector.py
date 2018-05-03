@@ -8,6 +8,8 @@ from skimage import measure, transform, morphology
 import scipy.stats
 from tqdm import tqdm
 from scipy.ndimage.filters import gaussian_filter
+import uuid
+import bloby.util as util
 
 __docformat__ = 'reStructuredText'
 
@@ -133,7 +135,7 @@ class BlobDetector(object):
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
         eroded_img = gm_img
-        
+
         if self.data_source == 'COLM':
             eroded_img = morphology.erosion(gm_img)
         else:
@@ -195,3 +197,16 @@ class BlobDetector(object):
             region_intensities[str(rgn)] = float(np.sum([raw_img[v[0], v[1], v[2]] for v in voxels]))
 
         return region_intensities
+
+def multicore_handler(data, coords):
+    z_start, y_start, x_start = coords
+    fname = str(uuid.uuid4())
+    fpath = 'process_folder/{}.tiff'.format(fname)
+    opath = 'process_folder/final.csv'.format(fname)
+    imsave(fpath, data['raw_data'].astype(np.uint16))
+
+    detector = BlobDetector(fpath)
+    centroids = detector.get_blob_centroids()
+    centroids = [[c[0] + z_start, c[1] + y_start, c[2] + x_start] for c in centroids]
+    util.write_list_to_csv(centroids, opath, open_mode='a')
+    return centroids
