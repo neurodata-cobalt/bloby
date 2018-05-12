@@ -5,7 +5,7 @@ from intern.resource.boss.resource import *
 import tifffile as tf
 import numpy as np
 import os
-from src.bossmeta import *
+from bloby.bossmeta import *
 import configparser
 
 class IngestTifStack(object):
@@ -31,7 +31,15 @@ class IngestTifStack(object):
             if last_z > data.shape[Z_LOC]:
                 last_z = data.shape[Z_LOC]
             if self.verbose > 0: print(resolution, [0, size[2]], [0, size[1]], [i, last_z])
-            rmt.create_cutout(channel_resource, resolution, [0, size[2]], [0, size[1]], [i, last_z], np.asarray(data[i:last_z,:,:], order='C'))
+            rmt.create_cutout(channel_resource, resolution, [0, size[2]], [0, size[1]], [i, last_z], np.asarray(data[i:last_z, :, :], order='C'))
+
+    def _upload_chunk_to_boss(self, rmt, data, channel_resource, resolution=0, z_range=None):
+        Z_LOC = 0
+        size = data.shape
+        z_start, z_end = z_range
+
+        if self.verbose > 0: print(resolution, [0, size[2]], [0, size[1]], [z_start, z_end])
+        rmt.create_cutout(channel_resource, resolution, [0, size[2]], [0, size[1]], [z_start, z_end], np.asarray(data[:, :, :], order='C'))
 
     def _get_boss_config(self):
         config = configparser.ConfigParser()
@@ -77,7 +85,11 @@ class IngestTifStack(object):
             else:
                 img = img.astype('uint64')
 
-        self._upload_to_boss(rmt, img, channel_rsc)
+        if not self.args.chunk:
+            self._upload_to_boss(rmt, img, channel_rsc)
+        else:
+            self._upload_chunk_to_boss(rmt, img, channel_rsc, z_range=self.args.z_range)
+
         url = 'https://ndwebtools.neurodata.io/ndviz_url/{}/{}/'.format(coll_name, exp_name)
 
         if group_name:
@@ -138,3 +150,7 @@ class ConfigParams(object):
         self.new_channel = param_dict['new_channel']
         self.source_channel = param_dict['source_channel']
         self.config = param_dict['config']
+        self.z_range = param_dict['z_range']
+        self.y_range = param_dict['y_range']
+        self.x_range = param_dict['x_range']
+        self.chunk = param_dict['chunk'] if 'chunk' in param_dict else False

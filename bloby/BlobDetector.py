@@ -10,6 +10,7 @@ from tqdm import tqdm
 from scipy.ndimage.filters import gaussian_filter
 import uuid
 import bloby.util as util
+import os
 
 __docformat__ = 'reStructuredText'
 
@@ -134,6 +135,12 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
+        if self.threshold <= 5000:
+            if self.verbose:
+                print('Threshold too less. Returning 0 centroids')
+
+            return []
+
         eroded_img = gm_img
 
         if self.data_source == 'COLM':
@@ -200,6 +207,7 @@ class BlobDetector(object):
 
 def multicore_handler(data, coords):
     z_start, y_start, x_start = coords
+    print('multicore_handler {},{},{}'.format(z_start, y_start, x_start))
     fname = str(uuid.uuid4())
     fpath = 'process_folder/{}.tiff'.format(fname)
     opath = 'process_folder/final.csv'.format(fname)

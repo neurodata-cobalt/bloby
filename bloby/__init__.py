@@ -1,1 +1,1 @@
-from src import BlobDetector
+from . import BlobDetector
