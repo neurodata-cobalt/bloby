@@ -135,9 +135,9 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
-        if self.threshold <= 5000:
+        if self.threshold <= 2500:
             if self.verbose:
-                print('Threshold too less. Returning 0 centroids')
+                print('Threshold {} too less. Returning 0 centroids'.format(self.threshold))
 
             return []
 
@@ -205,13 +205,13 @@ class BlobDetector(object):
 
         return region_intensities
 
-def multicore_handler(data, coords):
+def multicore_handler(data, coords, channel):
     z_start, y_start, x_start = coords
     print('multicore_handler {},{},{}'.format(z_start, y_start, x_start))
     fname = str(uuid.uuid4())
     fpath = 'process_folder/{}.tiff'.format(fname)
     opath = 'process_folder/final.csv'.format(fname)
-    imsave(fpath, data['raw_data'].astype(np.uint16))
+    imsave(fpath, data[channel].astype(np.uint16))
 
     detector = BlobDetector(fpath, verbose=True)
     centroids = detector.get_blob_centroids()
