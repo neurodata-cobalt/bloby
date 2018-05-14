@@ -205,16 +205,14 @@ class BlobDetector(object):
 
         return region_intensities
 
-def multicore_handler(data, coords, channel):
+def multicore_handler(data, coords, channel, save_path='process_folder/final.csv'):
     z_start, y_start, x_start = coords
-    print('multicore_handler {},{},{}'.format(z_start, y_start, x_start))
     fname = str(uuid.uuid4())
     fpath = 'process_folder/{}.tiff'.format(fname)
-    opath = 'process_folder/final.csv'.format(fname)
     imsave(fpath, data[channel].astype(np.uint16))
 
-    detector = BlobDetector(fpath, verbose=True)
+    detector = BlobDetector(fpath)
     centroids = detector.get_blob_centroids()
     centroids = [[c[0] + z_start, c[1] + y_start, c[2] + x_start] for c in centroids]
-    util.write_list_to_csv(centroids, opath, open_mode='a')
+    util.write_list_to_csv(centroids, save_path, open_mode='a')
     return centroids
