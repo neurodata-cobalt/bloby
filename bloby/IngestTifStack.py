@@ -33,13 +33,16 @@ class IngestTifStack(object):
             if self.verbose > 0: print(resolution, [0, size[2]], [0, size[1]], [i, last_z])
             rmt.create_cutout(channel_resource, resolution, [0, size[2]], [0, size[1]], [i, last_z], np.asarray(data[i:last_z, :, :], order='C'))
 
-    def _upload_chunk_to_boss(self, rmt, data, channel_resource, resolution=0, z_range=None):
+    def _upload_chunk_to_boss(self, rmt, data, channel_resource, resolution=0, x_range=None, y_range=None, z_range=None):
         Z_LOC = 0
         size = data.shape
-        z_start, z_end = z_range
 
-        if self.verbose > 0: print(resolution, [0, size[2]], [0, size[1]], [z_start, z_end])
-        rmt.create_cutout(channel_resource, resolution, [0, size[2]], [0, size[1]], [z_start, z_end], np.asarray(data[:, :, :], order='C'))
+        z_start, z_end = z_range
+        y_start, y_end = y_range
+        x_start, x_end = x_range
+
+        if self.verbose > 0: print(resolution, [x_start, x_end], [y_start, y_end], [z_start, z_end])
+        rmt.create_cutout(channel_resource, resolution, [x_start, x_end], [y_start, y_end], [z_start, z_end], np.asarray(data[:, :, :], order='C'))
 
     def _get_boss_config(self):
         config = configparser.ConfigParser()
@@ -88,7 +91,7 @@ class IngestTifStack(object):
         if not self.args.chunk:
             self._upload_to_boss(rmt, img, channel_rsc)
         else:
-            self._upload_chunk_to_boss(rmt, img, channel_rsc, z_range=self.args.z_range)
+            self._upload_chunk_to_boss(rmt, img, channel_rsc, x_range=self.args.x_range, y_range=self.args.y_range, z_range=self.args.z_range)
 
         url = 'https://ndwebtools.neurodata.io/ndviz_url/{}/{}/'.format(coll_name, exp_name)
 
