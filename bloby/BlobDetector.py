@@ -135,7 +135,7 @@ class BlobDetector(object):
         data_points = [p for p in zip(*uniq)]
         gm_img = self._gmm_cluster(self.img, data_points, self.n_components)
 
-        if self.threshold <= 2500:
+        if self.threshold <= 5000:
             if self.verbose:
                 print('Threshold {} too less. Returning 0 centroids'.format(self.threshold))
 
