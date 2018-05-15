@@ -206,6 +206,9 @@ class BlobDetector(object):
         return region_intensities
 
 def multicore_handler(data, coords, channel, save_path='process_folder/final.csv'):
+    plog_file = open('progress.log', 'a')
+    plog_file.write('Processing {} {} {}\n'.format(coords[0], coords[1], coords[2]))
+
     z_start, y_start, x_start = coords
     fname = str(uuid.uuid4())
     fpath = 'process_folder/{}.tiff'.format(fname)
