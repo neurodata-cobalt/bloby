@@ -115,3 +115,6 @@ ENV/
 
 bin/bloby
 .docker-env
+
+scripts/ndmulticore/
+scripts/process_folder/
